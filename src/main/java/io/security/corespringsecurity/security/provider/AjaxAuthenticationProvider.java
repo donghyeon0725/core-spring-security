@@ -36,7 +36,7 @@ public class AjaxAuthenticationProvider implements AuthenticationProvider {
 
         // 인증 토큰을 발급해야 한다. => Authentication 를 상속한 객체이다.
         // principal => account, credentials => password
-        return new UsernamePasswordAuthenticationToken(account, null, accountContext.getAuthorities());
+        return new AjaxAuthenticationToken(account, null, accountContext.getAuthorities());
     }
 
     @Override
