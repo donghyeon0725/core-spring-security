@@ -46,14 +46,17 @@ public class AjaxSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        customConfigureAjax(http);
+
         http
                 .antMatcher("/api/**")
                 .authorizeRequests()
                 .antMatchers("/api/messages").hasRole("MANAGER")
+                .antMatchers("/api/login").permitAll()
                 .anyRequest().authenticated()
                 /*.anyRequest().authenticated()*/
-                .and()
-                .addFilterBefore(abstractAuthenticationProcessingFilter(), UsernamePasswordAuthenticationFilter.class)
+/*                .and()
+                .addFilterBefore(abstractAuthenticationProcessingFilter(), UsernamePasswordAuthenticationFilter.class)*/
         ;
 
 
@@ -64,6 +67,17 @@ public class AjaxSecurityConfig extends WebSecurityConfigurerAdapter {
 
 
         http.csrf().disable();
+    }
+
+    /**
+     * 커스텀 DSL 설정을 위한 메소드
+     * */
+    private void customConfigureAjax(HttpSecurity http) throws Exception {
+        http
+                .apply(new AjaxLoginConfigurer<>("/api/login"))
+                .successHandlerAjax(authenticationSuccessHandler())
+                .failureHandlerAjax(authenticationFailureHandler())
+                .setAuthenticationManager(authenticationManagerBean());
     }
 
     @Bean
@@ -78,6 +92,8 @@ public class AjaxSecurityConfig extends WebSecurityConfigurerAdapter {
     public AuthenticationFailureHandler authenticationFailureHandler() {
         return new AjaxAuthenticationFailureHandler();
     }
+/*
+
 
     @Bean
     public AbstractAuthenticationProcessingFilter abstractAuthenticationProcessingFilter() throws Exception {
@@ -88,6 +104,8 @@ public class AjaxSecurityConfig extends WebSecurityConfigurerAdapter {
 
         return filter;
     }
+*/
+
 
     /**
      * Security 계정 DB 연동

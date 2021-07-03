@@ -1,26 +1,18 @@
 package io.security.corespringsecurity.security.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.security.corespringsecurity.common.ModelMapperUtil;
-import io.security.corespringsecurity.domain.Account;
-import io.security.corespringsecurity.domain.AccountDTO;
+import io.security.corespringsecurity.domain.dto.AccountDTO;
 import io.security.corespringsecurity.security.token.AjaxAuthenticationToken;
-import org.modelmapper.ModelMapper;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.authentication.AbstractAuthenticationProcessingFilter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
-import org.springframework.ui.ModelMap;
 import org.springframework.util.StringUtils;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
 
 public class AjaxLoginProcessingFilter extends AbstractAuthenticationProcessingFilter {
 

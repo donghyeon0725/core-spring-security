@@ -3,10 +3,9 @@ package io.security.corespringsecurity.controller.user;
 
 import io.security.corespringsecurity.common.ModelMapperUtil;
 import io.security.corespringsecurity.domain.Account;
-import io.security.corespringsecurity.domain.AccountDTO;
+import io.security.corespringsecurity.domain.dto.AccountDTO;
 import io.security.corespringsecurity.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
