@@ -1,21 +1,34 @@
 package io.security.corespringsecurity.security.configs;
 
+import io.security.corespringsecurity.domain.RoleHierarchy;
+import io.security.corespringsecurity.security.factory.UrlResourcesMapFactoryBean;
 import io.security.corespringsecurity.security.filter.AjaxLoginProcessingFilter;
+import io.security.corespringsecurity.security.filter.PermitAllFilter;
 import io.security.corespringsecurity.security.handler.CustomAccessDeniedHandler;
+import io.security.corespringsecurity.security.metadatasource.UrlFilterInvocationSecurityMetadataSource;
 import io.security.corespringsecurity.security.provider.AjaxAuthenticationProvider;
 import io.security.corespringsecurity.security.provider.CustomAuthenticationProvider;
+import io.security.corespringsecurity.security.voter.IpAddressVoter;
+import io.security.corespringsecurity.service.SecurityResourceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.access.AccessDecisionVoter;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.access.vote.AffirmativeBased;
+import org.springframework.security.access.vote.RoleHierarchyVoter;
+import org.springframework.security.access.vote.RoleVoter;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -27,10 +40,14 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.intercept.FilterSecurityInterceptor;
 import org.springframework.security.web.authentication.*;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Configuration
@@ -46,6 +63,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private final AuthenticationSuccessHandler authenticationSuccessHandler;
 
     private final AuthenticationFailureHandler authenticationFailureHandler;
+
+    private final SecurityResourceService securityResourceService;
+
+    private final String[] permitAllResources = {"/", "/login", "/user/login/**"};
 
     /**
      * 인증을 위해서, 인증 과정을 우리가 직접 정의할 수 있다.
@@ -96,10 +117,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(final HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/", "/users", "/user/login/**").permitAll()
-                .antMatchers("/mypage").hasRole("USER")
-                .antMatchers("/messages").hasRole("MANAGER")
-                .antMatchers("/config").hasRole("ADMIN")
                 .anyRequest().authenticated()
 
         .and()
@@ -111,6 +128,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .successHandler(authenticationSuccessHandler)
                 .failureHandler(authenticationFailureHandler)
                 .permitAll();
+
+        http
+                .addFilterBefore(filterSecurityInterceptor(), FilterSecurityInterceptor.class);
 
         http
                 .exceptionHandling()
@@ -128,5 +148,65 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
 
+    @Bean
+    public FilterSecurityInterceptor filterSecurityInterceptor() throws Exception {
+        PermitAllFilter interceptor = new PermitAllFilter(permitAllResources);
+
+        interceptor.setSecurityMetadataSource(urlFilterInvocationSecurityMetadataSource());
+        interceptor.setAccessDecisionManager(affirmativeBased());
+        interceptor.setAuthenticationManager(authenticationManagerBean());
+
+        return interceptor;
+    }
+
+    @Bean
+    public UrlFilterInvocationSecurityMetadataSource urlFilterInvocationSecurityMetadataSource() {
+        return new UrlFilterInvocationSecurityMetadataSource(urlResourcesMapFactoryBean().getObject(), securityResourceService);
+    }
+
+    /**
+     * 하나라도 접근 거부가 뜨면
+     * 허가 거부
+     * */
+    @Bean
+    public AffirmativeBased affirmativeBased() {
+        return new AffirmativeBased(getAccessDecisionVoters());
+    }
+
+    /**
+     * 보터 리스트
+     * */
+    private List<AccessDecisionVoter<?>> getAccessDecisionVoters() {
+
+        List<AccessDecisionVoter<?>> voters = new ArrayList<>();
+        // ip address 심의를 가장 먼저 할 수 있도록 맨 처음에 추가 => AffirmativeBased AbstractAccessDecisionManager 를 달고 있기 때문에(하나라도 허가시 허가), IpAddressVoter를 가장 먼저 달아주어야 한다.
+        voters.add(new IpAddressVoter(securityResourceService));
+        voters.add(roleVoter());
+        return voters;
+    }
+
+    /**
+     * 권한 계층의 정보를 setting 한 voter
+     * */
+    @Bean
+    public AccessDecisionVoter<?> roleVoter() {
+        return new RoleHierarchyVoter(roleHierarchy());
+    }
+
+    /**
+     * 권한 계층
+     * */
+    @Bean
+    public RoleHierarchyImpl roleHierarchy() {
+        return new RoleHierarchyImpl();
+    }
+
+
+    private UrlResourcesMapFactoryBean urlResourcesMapFactoryBean() {
+        UrlResourcesMapFactoryBean urlResourcesMapFactoryBean = new UrlResourcesMapFactoryBean();
+        urlResourcesMapFactoryBean.setSecurityResourceService(securityResourceService);
+
+        return urlResourcesMapFactoryBean;
+    }
 
 }

@@ -4,7 +4,7 @@
 	<script type="text/javascript">
 	$(document).ready(function(){
 	});
-	
+
 	</script>
 	<div th:replace="admin/common/top::header"></div>
 	<div id="maininner"><!-- maininner (s)-->
@@ -24,19 +24,19 @@
 					</tr>
 					</thead>
 					<tbody>
-					<tr class="link_btn hover" th:each="account : ${accounts}">
+					<tr class="link_btn hover" th:each="user : ${users}">
 
 						<td style="text-align: left;">
-							<a th:href="@{'/admin/accounts/' + ${account.id}}"><span th:text="${account.username}">회원</span></a>
+							<a th:href="@{'/admin/users/' + ${user.id}}"><span th:text="${user.username}">회원</span></a>
 						</td>
-						<td style="text-align: left;" th:text="${account.email}"></td>
-						<td style="text-align: left;" th:text="${account.age}"></td>
-						<td style="text-align: left;" th:text="${account.userRoles}"></td>
+						<td style="text-align: left;" th:text="${user.email}"></td>
+						<td style="text-align: left;" th:text="${user.age}"></td>
+						<td style="text-align: left;" th:text="${user.userRoles}"></td>
 					</tr>
 					</tbody>
 				</table>
 			</div>
 	</div>
-		
+
 </body>
 </html>
